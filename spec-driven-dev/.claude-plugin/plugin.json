@@ -1,0 +1,21 @@
+{
+  "name": "spec-driven-dev",
+  "description": "A full product-dev pipeline for Claude Code: use cases, tech design, UX/UI design, dev plans, pre-commit checks, and commit workflows.",
+  "version": "0.1.0",
+  "author": {
+    "name": "dorg-atsabari"
+  },
+  "homepage": "https://github.com/dorg-atsabari/forge/tree/main/spec-driven-dev",
+  "repository": "https://github.com/dorg-atsabari/forge",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "plugin",
+    "workflow",
+    "spec-driven",
+    "design",
+    "ux",
+    "ui",
+    "dev-plan"
+  ]
+}
