@@ -40,20 +40,14 @@ After installing, skills are available as `/spec-driven-dev:<skill>` (e.g., `/sp
 
 ### Wire up the rules (optional but recommended)
 
-Rules aren't auto-loaded by installed plugins. To enforce them in your project, copy them into your project's `.claude/rules/` and reference them from your `CLAUDE.md`:
+Rules aren't auto-loaded by installed plugins — they ship in the plugin folder as reference. To enforce them in your project, copy them into your project's `.claude/rules/`:
 
 ```bash
 mkdir -p .claude/rules
 cp <plugin-location>/rules/*.md .claude/rules/
 ```
 
-Then add to your `CLAUDE.md`:
-
-```markdown
-## Rules
-- `.claude/rules/context-source-of-truth.md` — trust code over docs
-- `.claude/rules/documentation-workflow.md` — dev and docs are separate workflows
-```
+Claude Code auto-loads everything in `.claude/rules/` into every session. No `CLAUDE.md` wiring needed.
 
 ## Typical flow
 
