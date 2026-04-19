@@ -1,0 +1,79 @@
+name: Auto bump plugin version
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    # skip if the push came from this workflow itself
+    if: "!contains(github.event.head_commit.message, 'chore(') || !contains(github.event.head_commit.message, 'bump to v')"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Detect changed plugins
+        id: detect
+        run: |
+          # find all plugin dirs (dirs containing .claude-plugin/plugin.json)
+          mapfile -t ALL_PLUGINS < <(find . -type f -path "*/.claude-plugin/plugin.json" \
+            -not -path "./node_modules/*" | sed 's|/.claude-plugin/plugin.json$||' | sed 's|^\./||')
+
+          echo "All plugins found:"
+          printf '  %s\n' "${ALL_PLUGINS[@]}"
+
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+
+          # first commit on branch — before is all zeros. fall back to HEAD~1
+          if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+            BEFORE="HEAD~1"
+          fi
+
+          CHANGED_FILES=$(git diff --name-only "$BEFORE" "$AFTER" 2>/dev/null || echo "")
+          echo "Changed files:"
+          echo "$CHANGED_FILES" | sed 's/^/  /'
+
+          TO_BUMP=()
+          for P in "${ALL_PLUGINS[@]}"; do
+            # changed files under plugin dir, excluding plugin.json itself
+            if echo "$CHANGED_FILES" | grep -E "^$P/" | grep -v "^$P/.claude-plugin/plugin.json$" > /dev/null; then
+              TO_BUMP+=("$P")
+            fi
+          done
+
+          if [[ ${#TO_BUMP[@]} -eq 0 ]]; then
+            echo "No plugin changes detected. Skipping bump."
+            echo "plugins=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Plugins to bump:"
+            printf '  %s\n' "${TO_BUMP[@]}"
+            echo "plugins=${TO_BUMP[*]}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump + tag + push
+        if: steps.detect.outputs.plugins != ''
+        env:
+          CI: "true"
+        run: |
+          for P in ${{ steps.detect.outputs.plugins }}; do
+            ./scripts/bump.sh "$P" patch
+            NAME=$(jq -r ".name"    "$P/.claude-plugin/plugin.json")
+            VERSION=$(jq -r ".version" "$P/.claude-plugin/plugin.json")
+            git add "$P/.claude-plugin/plugin.json"
+            git commit -m "chore($NAME): bump to v$VERSION"
+            git tag "$NAME-v$VERSION"
+          done
+          git push
+          git push --tags
