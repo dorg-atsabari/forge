@@ -56,11 +56,7 @@
     color:var(--muted);font-size:12px;letter-spacing:.04em}
   .num{font-variant-numeric:tabular-nums}
 
-  .stage{counter-reset:slide}
-  .slide{counter-increment:slide}
-  .num::before{content:counter(slide, decimal-leading-zero)}
-  .num{font-size:0}
-  .num::before{font-size:12px}
+  .num{font-variant-numeric:tabular-nums;font-size:12px}
 
   .panel{padding:14px 16px;border:1px solid var(--line);border-radius:12px;
     background:rgba(255,255,255,.025)}
@@ -195,12 +191,17 @@
   body.presenting .slide.next{
     display:block;
     position:fixed;top:50%;
-    width:80vw;max-width:1100px;height:80vh;max-height:700px;
-    overflow:hidden;
+    width:80vw;max-width:1100px;
+    min-height:650px;
+    max-height:90vh;
+    overflow-y:auto;
     z-index:100;
     transition:transform .45s cubic-bezier(.22,.61,.36,1), opacity .35s ease, filter .35s ease;
     will-change:transform,opacity;
   }
+  body.presenting .slide.prev .pad,
+  body.presenting .slide.active .pad,
+  body.presenting .slide.next .pad{padding-bottom:72px}
   body.presenting .slide.active{
     left:50%;transform:translate(-50%,-50%) scale(1);
     opacity:1;filter:none;
@@ -348,31 +349,69 @@
 <!-- 05 Pipeline overview -->
 <section class="slide" id="topic-pipeline"><div class="pad">
   <span class="tag">The pipeline</span>
-  <h2>9 skills, one workflow</h2>
-  <div class="pipe" style="margin-top:6px">
-    <div class="step"><div class="n">01</div><div class="t">use-cases</div><div class="d">Requirements → structured use cases</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">02</div><div class="t">tech-design</div><div class="d">Architecture, contracts, flows</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">03</div><div class="t">ui-ux-design</div><div class="d">Wireframes → styled previews</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">04</div><div class="t">impl-order</div><div class="d">Dependency-ordered plan groups</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">05</div><div class="t">dev-plan</div><div class="d">Committable step-by-step</div></div>
+  <h2>9 skills, grouped by phase</h2>
+
+  <!-- SETUP row -->
+  <div style="margin-top:10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
+      <span style="font:700 11px/1 'Inter',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)">Setup</span>
+      <span class="muted" style="font-size:12px">decide before you code · specs land in <code>specs/</code></span>
+    </div>
+    <div class="pipe">
+      <div class="step"><div class="n">01</div><div class="t">use-cases</div><div class="d">Requirements → use cases</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">02</div><div class="t">tech-design</div><div class="d">Architecture, contracts, flows</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">03</div><div class="t">ui-ux-design</div><div class="d">Wireframes → design system</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">04</div><div class="t">impl-order</div><div class="d">Domain groupings</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">05</div><div class="t">dev-plan</div><div class="d">Committable steps</div></div>
+    </div>
+    <div style="margin-top:10px;padding:8px 12px;border:1px dashed var(--accent);border-radius:8px;background:rgba(255,122,26,.05);display:flex;align-items:center;gap:10px">
+      <span style="font:700 10px/1 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">shortcut</span>
+      <code>/end-to-end</code>
+      <span class="muted" style="font-size:12.5px">— orchestrates 01→05 with state + human checkpoints</span>
+    </div>
   </div>
-  <div class="pipe" style="margin-top:14px">
-    <div class="step"><div class="n">06</div><div class="t">end-to-end</div><div class="d">Orchestrates 01 → 05 with state</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">07</div><div class="t">pre-commit</div><div class="d">Run tests &amp; build before commit</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">08</div><div class="t">commit</div><div class="d">Conventional commit message</div></div>
-    <div class="arrow">→</div>
-    <div class="step"><div class="n">09</div><div class="t">document</div><div class="d">Align docs to the actual code</div></div>
+
+  <!-- EXECUTE + CHECKS + COMMIT row -->
+  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+    <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
+      <span style="font:700 11px/1 'Inter',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:8px">Execute</span>
+      <div class="step" style="border:none;padding:0;background:transparent">
+        <div class="t"><code>/dev-plan</code> · resume</div>
+        <div class="d">Execute step-by-step. One step = one commit.</div>
+      </div>
+    </div>
+    <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
+      <span style="font:700 11px/1 'Inter',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:8px">Check</span>
+      <div class="step" style="border:none;padding:0;background:transparent">
+        <div class="n">07</div>
+        <div class="t">pre-commit</div>
+        <div class="d">Tests + build. Stops on first fail.</div>
+      </div>
+    </div>
+    <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
+      <span style="font:700 11px/1 'Inter',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:8px">Commit</span>
+      <div class="step" style="border:none;padding:0;background:transparent">
+        <div class="n">08</div>
+        <div class="t">commit</div>
+        <div class="d">Conventional Commit, stage by name.</div>
+      </div>
+    </div>
   </div>
-  <p class="muted" style="font-size:13px;margin-top:14px">
-    Use them <em class="acc">individually</em> for targeted help, or <em class="acc">as a chain</em> when starting fresh. The <code>end-to-end</code> skill drives the whole thing for you.
-  </p>
-  <div class="footer"><span>Overview · each one next</span><span class="num"></span></div>
+
+  <!-- DOCUMENT (offline) -->
+  <div style="margin-top:12px;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;background:rgba(255,255,255,.015);display:flex;align-items:center;gap:14px">
+    <span style="font:700 11px/1 'Inter',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Offline · extra step</span>
+    <div style="flex:1">
+      <div style="font:600 13px/1 'Inter',sans-serif;color:var(--ink)"><code>/document</code> — align <code>docs/</code> with shipped code</div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Separate pass after a feature lands. Not in the main flow.</div>
+    </div>
+  </div>
+
+  <div class="footer"><span>Overview · each skill covered next</span><span class="num"></span></div>
 </div></section>
 
 <!-- 06 use-cases-generator -->
@@ -896,6 +935,15 @@ let cur = 0;
 const counter = document.querySelector('.present-counter');
 
 function slides() { return document.querySelectorAll('.slide'); }
+
+// populate each slide's footer .num with its 1-based index (zero-padded)
+(function numberSlides() {
+  const s = slides();
+  s.forEach((el, i) => {
+    const num = el.querySelector('.num');
+    if (num) num.textContent = String(i + 1).padStart(2, '0');
+  });
+})();
 
 function showSlide(i, direction) {
   const s = slides();
