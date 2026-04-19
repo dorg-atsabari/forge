@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Forge — Spec-Driven Dev toolkit for Claude Code</title>
+<style>
+  :root{
+    --bg:#0B1020; --bg2:#0E1530; --ink:#F5F7FA; --muted:#9AA3B2;
+    --accent:#FF7A1A; --accent2:#FFB37A; --line:#1B2236; --ok:#3DDC97; --warn:#FFD166;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05070F;color:var(--ink);
+    font-family:"Inter","Helvetica Neue",ui-sans-serif,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .stage{display:flex;flex-direction:column;gap:24px;padding:32px;min-height:100%}
+  .slide{
+    position:relative;width:100%;max-width:1200px;min-height:620px;margin:0 auto;
+    background:linear-gradient(160deg,var(--bg) 0%, var(--bg2) 100%);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .slide::before{
+    content:"";position:absolute;inset:auto -140px -200px auto;width:560px;height:560px;
+    background:radial-gradient(circle at 30% 30%, rgba(255,122,26,.28), transparent 60%);
+    filter:blur(20px);pointer-events:none;
+  }
+  .pad{padding:48px 56px 60px;display:flex;flex-direction:column;gap:18px}
+
+  .pdf-btn{
+    position:fixed;top:20px;right:20px;z-index:10;
+    background:var(--accent);color:#0B1020;border:0;cursor:pointer;
+    font:600 13px/1 "Inter",system-ui,sans-serif;letter-spacing:.04em;
+    padding:12px 18px;border-radius:999px;
+    box-shadow:0 8px 24px rgba(255,122,26,.35);
+  }
+  .pdf-btn:hover{filter:brightness(1.05)}
+
+  .tag{display:inline-flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);font-weight:600}
+  .tag::before{content:"";width:28px;height:3px;background:var(--accent);border-radius:2px}
+  h1{font-size:64px;line-height:1;margin:14px 0 10px;font-weight:800;letter-spacing:-.02em}
+  h2{font-size:34px;line-height:1.05;margin:8px 0 6px;font-weight:700;letter-spacing:-.01em}
+  h3{font-size:18px;margin:0 0 6px;font-weight:700;letter-spacing:-.005em}
+  p,li{font-size:15px;line-height:1.55;color:var(--ink)}
+  .lede{font-size:16px;line-height:1.5;color:var(--ink);max-width:820px}
+  .muted{color:var(--muted)}
+  em.acc{color:var(--accent);font-style:normal;font-weight:600}
+  code{background:rgba(255,255,255,.07);padding:2px 8px;border-radius:6px;
+    font:500 12.5px/1.4 "JetBrains Mono",ui-monospace,Menlo,monospace;color:var(--accent2)}
+  pre{margin:0;padding:14px 16px;background:rgba(0,0,0,.35);border:1px solid var(--line);
+    border-radius:10px;font:500 12.5px/1.55 "JetBrains Mono",ui-monospace,Menlo,monospace;
+    color:#E8ECF4;overflow:hidden}
+
+  .footer{position:absolute;bottom:0;left:0;right:0;padding:0 56px 24px;
+    display:flex;justify-content:space-between;align-items:center;
+    color:var(--muted);font-size:12px;letter-spacing:.04em}
+  .num{font-variant-numeric:tabular-nums}
+
+  .stage{counter-reset:slide}
+  .slide{counter-increment:slide}
+  .num::before{content:counter(slide, decimal-leading-zero)}
+  .num{font-size:0}
+  .num::before{font-size:12px}
+
+  .panel{padding:14px 16px;border:1px solid var(--line);border-radius:12px;
+    background:rgba(255,255,255,.025)}
+  .panel h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+  .tree{font:500 12.5px/1.65 "JetBrains Mono",ui-monospace,Menlo,monospace;color:#E8ECF4;white-space:pre}
+  .tree .dim{color:var(--muted)}
+  .tree .acc{color:var(--accent2)}
+  .snip{margin:0;padding:12px 14px;background:rgba(0,0,0,.4);border:1px solid var(--line);
+    border-radius:10px;font:500 11.5px/1.55 "JetBrains Mono",ui-monospace,Menlo,monospace;
+    color:#E8ECF4;white-space:pre;overflow:hidden}
+  .snip .h{color:var(--accent)}
+  .snip .c{color:var(--muted)}
+  .snip .s{color:var(--accent2)}
+
+  .mock{aspect-ratio:16/10;border-radius:10px;overflow:hidden;border:1px solid var(--line);
+    display:flex;flex-direction:column;position:relative}
+  .mock .bar{height:22px;display:flex;align-items:center;gap:4px;padding:0 10px;border-bottom:1px solid var(--line)}
+  .mock .bar i{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .mock .body{flex:1;display:grid;grid-template-columns:80px 1fr;gap:8px;padding:8px}
+  .mock .nav{display:flex;flex-direction:column;gap:6px}
+  .mock .nav span{height:8px;border-radius:3px}
+  .mock .main{display:flex;flex-direction:column;gap:6px}
+  .mock .row{display:flex;gap:6px}
+  .mock .blk{border-radius:4px}
+  .mock .h1{height:14px;width:55%;border-radius:4px}
+  .mock .h2{height:8px;width:80%;border-radius:3px}
+  .mock .card-mini{flex:1;height:42px;border-radius:6px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px}
+  .mock .btn{height:18px;width:70px;border-radius:999px}
+  .mock.wire{background:#1A1F2E}
+  .mock.wire .bar{background:#222838}
+  .mock.wire .bar i{background:#3a4256}
+  .mock.wire .nav span,
+  .mock.wire .h1,.mock.wire .h2,.mock.wire .blk,
+  .mock.wire .card-mini,.mock.wire .btn{background:#2c3346;outline:1px dashed #4a5468;outline-offset:-1px}
+
+  .tokens{aspect-ratio:16/10;border-radius:10px;border:1px solid var(--line);
+    background:linear-gradient(160deg,#0B1020,#0E1530);
+    padding:14px 16px;display:flex;flex-direction:column;gap:12px;font-size:11px;color:var(--muted)}
+  .tokens .sec{display:flex;flex-direction:column;gap:6px}
+  .tokens .sec .lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .swatches{display:flex;gap:6px}
+  .sw{flex:1;height:24px;border-radius:5px;border:1px solid rgba(255,255,255,.06)}
+  .typescale{display:flex;align-items:baseline;gap:14px;color:var(--ink)}
+  .typescale span{font-weight:700;line-height:1}
+  .typescale .t1{font-size:22px}
+  .typescale .t2{font-size:16px}
+  .typescale .t3{font-size:12px;color:var(--muted)}
+  .motion{display:flex;gap:6px;align-items:center}
+  .motion .chip{font:500 9.5px/1 "JetBrains Mono",ui-monospace,Menlo,monospace;
+    color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);
+    padding:5px 8px;border-radius:6px}
+  .comps{display:flex;gap:6px;align-items:center}
+  .comps .btn-p{height:18px;padding:0 10px;border-radius:999px;background:var(--accent);
+    color:#0B1020;font:700 9.5px/18px "Inter",sans-serif}
+  .comps .btn-s{height:18px;padding:0 10px;border-radius:999px;
+    background:transparent;border:1px solid var(--accent);color:var(--accent2);
+    font:600 9.5px/16px "Inter",sans-serif}
+  .comps .badge{height:14px;padding:0 7px;border-radius:4px;background:rgba(61,220,151,.15);
+    color:var(--ok);font:700 8.5px/14px "Inter",sans-serif;letter-spacing:.06em}
+
+  .mock-cap{font-size:11px;color:var(--muted);text-align:center;margin-top:8px;letter-spacing:.04em}
+  .mock-cap b{color:var(--ink)}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{padding:16px 18px;border:1px solid var(--line);border-radius:12px;
+    background:rgba(255,255,255,.025);display:flex;flex-direction:column;gap:6px}
+  .card .k{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+  .card p{font-size:13.5px;color:var(--muted);margin:0;line-height:1.5}
+
+  a.topic{color:inherit;text-decoration:none}
+  a.topic:hover{text-decoration:underline}
+
+  .pipe{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+  .step{flex:1;min-width:120px;padding:12px 12px;border:1px solid var(--line);
+    border-radius:10px;background:rgba(255,255,255,.03);position:relative}
+  .step .n{font-size:10px;color:var(--accent);letter-spacing:.18em;font-weight:700}
+  .step .t{font-size:13px;font-weight:600;margin-top:4px}
+  .step .d{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .arrow{align-self:center;color:var(--accent);font-size:18px;opacity:.7}
+
+  ul.clean{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+  ul.clean li{display:flex;gap:12px;align-items:flex-start}
+  ul.clean li::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;
+    background:var(--accent);margin-top:8px}
+
+  .skill-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .skill-head .cmd{font:500 14px/1 "JetBrains Mono",ui-monospace,Menlo,monospace;
+    color:var(--accent2);background:rgba(255,255,255,.06);padding:6px 10px;border-radius:8px}
+  .io{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .io .box{padding:12px 14px;border:1px solid var(--line);border-radius:10px;
+    background:rgba(255,255,255,.025)}
+  .io .box h3{color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  tr:last-child td{border-bottom:0}
+
+  @page { size: 13.333in 7.5in; margin: 0; }
+  @media print {
+    html,body{background:#0B1020}
+    .stage{padding:0;gap:0;display:block}
+    .slide{
+      max-width:none;width:100%;height:100vh;margin:0;
+      border:0;border-radius:0;box-shadow:none;
+      page-break-after:always;break-after:page;
+    }
+    .slide:last-child{page-break-after:auto;break-after:auto}
+    .pdf-btn,.present-btn{display:none}
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  }
+
+  .present-btn{
+    position:fixed;top:20px;right:160px;z-index:10;
+    background:rgba(255,255,255,.1);color:var(--ink);border:1px solid var(--line);cursor:pointer;
+    font:600 13px/1 "Inter",system-ui,sans-serif;letter-spacing:.04em;
+    padding:12px 18px;border-radius:999px;
+  }
+  .present-btn:hover{background:rgba(255,255,255,.15)}
+
+  .present-backdrop{
+    display:none;position:fixed;inset:0;z-index:90;
+    background:rgba(5,7,15,.85);
+  }
+  body.presenting .present-backdrop{display:block}
+
+  body.presenting{overflow:hidden}
+  body.presenting .stage > .slide{display:none}
+  body.presenting .slide.prev,
+  body.presenting .slide.active,
+  body.presenting .slide.next{
+    display:block;
+    position:fixed;top:50%;
+    width:80vw;max-width:1100px;height:80vh;max-height:700px;
+    overflow:hidden;
+    z-index:100;
+    transition:transform .45s cubic-bezier(.22,.61,.36,1), opacity .35s ease, filter .35s ease;
+    will-change:transform,opacity;
+  }
+  body.presenting .slide.active{
+    left:50%;transform:translate(-50%,-50%) scale(1);
+    opacity:1;filter:none;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+    z-index:110;
+  }
+  body.presenting .slide.prev{
+    left:12%;transform:translate(-50%,-50%) scale(.58);
+    opacity:.35;filter:blur(1px);
+    cursor:pointer;
+  }
+  body.presenting .slide.next{
+    left:88%;transform:translate(-50%,-50%) scale(.58);
+    opacity:.35;filter:blur(1px);
+    cursor:pointer;
+  }
+  body.presenting .slide.prev:hover,
+  body.presenting .slide.next:hover{opacity:.55;filter:blur(0)}
+  body.presenting .slide.active.enter-from-right{
+    animation:enterRight .45s cubic-bezier(.22,.61,.36,1);
+  }
+  body.presenting .slide.active.enter-from-left{
+    animation:enterLeft .45s cubic-bezier(.22,.61,.36,1);
+  }
+  @keyframes enterRight{
+    from{transform:translate(-50%,-50%) scale(.58);opacity:.35;left:88%}
+    to{transform:translate(-50%,-50%) scale(1);opacity:1;left:50%}
+  }
+  @keyframes enterLeft{
+    from{transform:translate(-50%,-50%) scale(.58);opacity:.35;left:12%}
+    to{transform:translate(-50%,-50%) scale(1);opacity:1;left:50%}
+  }
+  body.presenting .pdf-btn,
+  body.presenting .present-btn{display:none}
+  .present-counter{
+    display:none;position:fixed;bottom:20px;right:24px;z-index:200;
+    font:500 13px/1 "Inter",system-ui,sans-serif;color:var(--muted);
+    letter-spacing:.04em;
+  }
+  body.presenting .present-counter{display:block}
+</style>
+</head>
+<body>
+<button class="pdf-btn" onclick="window.print()">↓ Save as PDF</button>
+<button class="present-btn" onclick="startPresent()">▶ Present</button>
+<div class="present-backdrop" onclick="stopPresent()"></div>
+<div class="present-counter"></div>
+<div class="stage">
+
+<!-- 01 Title -->
+<section class="slide"><div class="pad">
+  <span class="tag">forge · team session</span>
+  <h1 style="font-size:64px">Forge</h1>
+  <p style="font-size:22px;font-weight:700;color:var(--accent);margin:4px 0 14px">A marketplace. A plugin. 9 skills.</p>
+  <p class="lede">An opinionated toolkit that turns spec-driven development into slash commands. Install it once, use one skill or the full pipeline.</p>
+  <div class="footer"><span>Internal · AI mentorship session</span><span class="num"></span></div>
+</div></section>
+
+<!-- 02 Agenda -->
+<section class="slide"><div class="pad">
+  <span class="tag">Agenda</span>
+  <h2>What we'll cover (≈ 30 min)</h2>
+  <p class="muted" style="font-size:13px;margin:0 0 6px">Assumes you've seen the Agentic SDLC intro. This one's about the tooling.</p>
+  <ol style="list-style:none;counter-reset:ag;padding:0;margin:10px 0 0;display:flex;flex-direction:column;gap:12px;max-width:780px">
+    <li style="counter-increment:ag;display:flex;gap:16px;align-items:flex-start">
+      <span style="flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,122,26,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif">1</span>
+      <div><a href="#topic-plugins" class="topic"><b>Claude Code plugins &amp; marketplaces</b></a> <span class="muted" style="font-size:12px">(3)</span><div class="muted" style="font-size:13px">Mental model: skills → plugins → marketplaces</div></div></li>
+    <li style="counter-increment:ag;display:flex;gap:16px;align-items:flex-start">
+      <span style="flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,122,26,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif">2</span>
+      <div><a href="#topic-install" class="topic"><b>Install forge</b></a> <span class="muted" style="font-size:12px">(4)</span><div class="muted" style="font-size:13px">Two commands, zero daemons</div></div></li>
+    <li style="counter-increment:ag;display:flex;gap:16px;align-items:flex-start">
+      <span style="flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,122,26,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif">3</span>
+      <div><a href="#topic-pipeline" class="topic"><b>The pipeline</b></a> <span class="muted" style="font-size:12px">(5)</span><div class="muted" style="font-size:13px">9 chained skills, end to end</div></div></li>
+    <li style="counter-increment:ag;display:flex;gap:16px;align-items:flex-start">
+      <span style="flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,122,26,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif">4</span>
+      <div><a href="#topic-walkthrough" class="topic"><b>Skill-by-skill walkthrough</b></a> <span class="muted" style="font-size:12px">(6-17)</span><div class="muted" style="font-size:13px">Inputs, outputs, when to invoke — with sample outputs</div></div></li>
+    <li style="counter-increment:ag;display:flex;gap:16px;align-items:flex-start">
+      <span style="flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,122,26,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif">5</span>
+      <div><a href="#topic-example" class="topic"><b>End-to-end example</b></a> <span class="muted" style="font-size:12px">(18)</span><div class="muted" style="font-size:13px">"Add a CSV export to the reports page" — requirement to commits</div></div></li>
+    <li style="counter-increment:ag;display:flex;gap:16px;align-items:flex-start">
+      <span style="flex:0 0 32px;height:32px;border-radius:50%;background:rgba(255,122,26,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif">6</span>
+      <div><a href="#topic-qa" class="topic"><b>Resources &amp; Q&amp;A</b></a> <span class="muted" style="font-size:12px">(19)</span><div class="muted" style="font-size:13px">Try it, extend it, publish your own</div></div></li>
+  </ol>
+  <div class="footer"><span>forge · spec-driven-dev</span><span class="num"></span></div>
+</div></section>
+
+<!-- 03 Plugins primer -->
+<section class="slide" id="topic-plugins"><div class="pad">
+  <span class="tag">Plugins &amp; marketplaces</span>
+  <h2>Claude Code: plugins &amp; marketplaces</h2>
+  <div class="grid-2">
+    <div>
+      <ul class="clean">
+        <li><div><b>Skill</b> — packaged instruction set (name + description + SKILL.md).<br>Two invocation modes:
+          <ul class="clean" style="margin-top:6px;gap:4px">
+            <li style="font-size:13px"><div><b>Auto-invoked</b> — Claude matches your request against the description and loads the skill automatically.</div></li>
+            <li style="font-size:13px"><div><b>Explicit</b> — you type <code>/skill-name</code> in the prompt to force-invoke.</div></li>
+          </ul>
+        </div></li>
+        <li><div><b>Plugin</b> — one or more skills bundled with a <code>plugin.json</code>.</div></li>
+        <li><div><b>Marketplace</b> — a Git repo that lists plugins. Anyone can publish one.</div></li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px">The mental model</h3>
+<pre>marketplace (forge)
+└── plugin (spec-driven-dev)
+    ├── skill (use-cases-generator) → /use-cases-generator
+    ├── skill (tech-design-generator) → /tech-design-generator
+    ├── skill (dev-plan) → /dev-plan
+    └── ... 6 more</pre>
+      <p class="muted" style="font-size:12.5px;margin-top:10px">
+        Skills are <em class="acc">discoverable</em> — Claude picks the right one from descriptions. Or invoke explicitly with the slash command.
+      </p>
+    </div>
+  </div>
+  <div class="footer"><span>Mental model</span><span class="num"></span></div>
+</div></section>
+
+<!-- 04 Install forge -->
+<section class="slide" id="topic-install"><div class="pad">
+  <span class="tag">Install</span>
+  <h2>Getting the marketplace and the plugin</h2>
+  <div class="grid-2">
+    <div>
+      <h3 class="muted" style="color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase">1 · Add the marketplace</h3>
+<pre>/plugin marketplace add https://github.com/dorg-atsabari/forge</pre>
+      <p class="muted" style="font-size:13px;margin-top:8px">Registers <code>forge</code> as a source. One-time per machine.</p>
+      <h3 class="muted" style="color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-top:18px">2 · Install the plugin</h3>
+<pre>/plugin install spec-driven-dev@forge</pre>
+      <p class="muted" style="font-size:13px;margin-top:8px">Pulls the plugin's 9 skills into Claude Code.</p>
+    </div>
+    <div class="card" style="justify-content:flex-start">
+      <span class="k">What you get after install</span>
+      <ul class="clean" style="margin-top:8px">
+        <li><div>9 skills available in any project</div></li>
+        <li><div>Artifacts land in <code>specs/</code> at the repo root</div></li>
+        <li><div>Just markdown — nothing runs in the background</div></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer"><span>Two commands. That's it.</span><span class="num"></span></div>
+</div></section>
+
+<!-- 05 Pipeline overview -->
+<section class="slide" id="topic-pipeline"><div class="pad">
+  <span class="tag">The pipeline</span>
+  <h2>9 skills, one workflow</h2>
+  <div class="pipe" style="margin-top:6px">
+    <div class="step"><div class="n">01</div><div class="t">use-cases</div><div class="d">Requirements → structured use cases</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">02</div><div class="t">tech-design</div><div class="d">Architecture, contracts, flows</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">03</div><div class="t">ui-ux-design</div><div class="d">Wireframes → styled previews</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">04</div><div class="t">impl-order</div><div class="d">Dependency-ordered plan groups</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">05</div><div class="t">dev-plan</div><div class="d">Committable step-by-step</div></div>
+  </div>
+  <div class="pipe" style="margin-top:14px">
+    <div class="step"><div class="n">06</div><div class="t">end-to-end</div><div class="d">Orchestrates 01 → 05 with state</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">07</div><div class="t">pre-commit</div><div class="d">Run tests &amp; build before commit</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">08</div><div class="t">commit</div><div class="d">Conventional commit message</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">09</div><div class="t">document</div><div class="d">Align docs to the actual code</div></div>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:14px">
+    Use them <em class="acc">individually</em> for targeted help, or <em class="acc">as a chain</em> when starting fresh. The <code>end-to-end</code> skill drives the whole thing for you.
+  </p>
+  <div class="footer"><span>Overview · each one next</span><span class="num"></span></div>
+</div></section>
+
+<!-- 06 use-cases-generator -->
+<section class="slide" id="topic-walkthrough"><div class="pad">
+  <span class="tag">Skill 01 / 09</span>
+  <div class="skill-head"><h2>use-cases-generator</h2><span class="cmd">/use-cases-generator</span></div>
+  <p class="lede">Turn raw requirements into a structured set of use cases organized by product surface.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">A requirements doc, a Slack thread, a meeting transcript, or just a description.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0"><code>specs/use-cases-&lt;system&gt;/</code> — README plus per-use-case markdown grouped by interaction boundary, not functional area.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> at the very start of a new feature, when requirements are messy or scattered.
+    <br><b style="color:var(--ink)">Notable:</b> two-level hierarchy — use cases (surfaces) contain flows (concrete journeys). Asks for approval of the proposed structure before writing files.
+  </p>
+  <div class="footer"><span>Pipeline · step 1</span><span class="num"></span></div>
+</div></section>
+
+<!-- 06b use-cases example -->
+<section class="slide"><div class="pad">
+  <span class="tag">Sample output · use-cases-generator</span>
+  <h2>What you actually get</h2>
+  <div class="grid-2" style="margin-top:4px">
+    <div class="panel">
+      <h3>Folder structure</h3>
+<div class="tree"><span class="acc">specs/use-cases-identity-hub/</span>
+├── README.md                    <span class="dim"># surfaces map + index</span>
+├── web-app.md                   <span class="dim"># surface 1 · browser UI</span>
+├── rest-api.md                  <span class="dim"># surface 2 · programmatic</span>
+└── blog-digest-automation.md    <span class="dim"># surface 3 · scheduled job</span></div>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">
+        One file per <em class="acc">surface</em>. Flows live as sections inside.
+      </p>
+    </div>
+    <div class="panel">
+      <h3>Excerpt · web-app.md</h3>
+<pre class="snip"><span class="h"># UC-1: Web Application</span>
+<span class="c">Browser-based UI where users connect Jira, create</span>
+<span class="c">tickets, and view recent activity.</span>
+
+<span class="s">Actor:</span> App User
+
+<span class="h">## Flow: Login</span>
+<span class="s">Trigger:</span> user navigates to app
+<span class="s">Outcome:</span> authenticated session
+1. User opens app in browser
+2. System shows login form
+3. User enters credentials
+4. System validates, creates session
+
+<span class="s">Error scenarios</span>
+<span class="c">- Invalid credentials → error, stay on form</span>
+<span class="c">- Account missing → generic error (no enumeration)</span>
+
+<span class="h">## Flow: Connect Jira</span>
+<span class="c">OAuth consent → token exchange → store securely</span>
+
+<span class="h">## Flow: Logout</span>
+<span class="c">Invalidate session → redirect</span></pre>
+    </div>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:6px">
+    Grouped by <em class="acc">surface</em>, not feature. Each file = one use case. Flows + error scenarios live as sections inside.
+  </p>
+  <div class="footer"><span>Sample · use-cases-generator</span><span class="num"></span></div>
+</div></section>
+
+<!-- 07 tech-design-generator -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 02 / 09</span>
+  <div class="skill-head"><h2>tech-design-generator</h2><span class="cmd">/tech-design-generator</span></div>
+  <p class="lede">Translate product requirements into a structured technical architecture: components, data stores, contracts, flows.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">A spec, PRD, or use-case set — plus the existing codebase as context.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0"><code>specs/tech-design-&lt;system&gt;/</code> with <code>design.md</code>, <code>dev-setup.md</code>, <code>api-contract.md</code>, <code>shared-patterns.md</code>, and per-flow files.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> before any implementation; whenever architecture decisions need to be captured.
+    <br><b style="color:var(--ink)">Notable:</b> two-phase — Phase 1 architecture, Phase 2 flows + contracts + shared patterns. Treats existing code as source of truth, doesn't reinvent what's there.
+  </p>
+  <div class="footer"><span>Pipeline · step 2</span><span class="num"></span></div>
+</div></section>
+
+<!-- 08 tech-design example -->
+<section class="slide"><div class="pad">
+  <span class="tag">Sample output · tech-design-generator</span>
+  <h2>What you actually get</h2>
+  <div class="grid-2" style="margin-top:4px">
+    <div class="panel">
+      <h3>Folder structure</h3>
+<div class="tree"><span class="acc">specs/tech-design-checkout/</span>
+├── design.md            <span class="dim"># components, decisions, data stores</span>
+├── dev-setup.md         <span class="dim"># local env, dependencies, run cmds</span>
+├── api-contract.md      <span class="dim"># every endpoint, request/response</span>
+├── shared-patterns.md   <span class="dim"># auth, errors, pagination, retries</span>
+└── flows/
+    ├── place-order.md   <span class="dim"># sequence + state transitions</span>
+    ├── refund.md
+    └── webhook-retry.md</div>
+    </div>
+    <div class="panel">
+      <h3>Excerpt · api-contract.md</h3>
+<pre class="snip"><span class="h">## POST /orders</span>
+<span class="c">Create an order from a cart. Idempotent on `cart_id`.</span>
+
+<span class="h">### Request</span>
+{
+  <span class="s">"cart_id"</span>: <span class="s">"cart_8f2a"</span>,
+  <span class="s">"payment_method_id"</span>: <span class="s">"pm_4b1c"</span>,
+  <span class="s">"shipping_address_id"</span>: <span class="s">"addr_91"</span>
+}
+
+<span class="h">### Response · 201</span>
+{ <span class="s">"order_id"</span>: <span class="s">"ord_77a"</span>, <span class="s">"status"</span>: <span class="s">"pending_payment"</span> }
+
+<span class="h">### Errors</span>
+<span class="c">409</span>  cart already converted    → returns existing order_id
+<span class="c">422</span>  payment_method invalid    → see shared-patterns.md#errors</pre>
+    </div>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:6px">
+    Every file is plain markdown — diffable, reviewable locally, and read by every later skill as ground truth.
+  </p>
+  <div class="footer"><span>Sample · tech-design-generator</span><span class="num"></span></div>
+</div></section>
+
+<!-- 09 ui-ux-design-generator -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 03 / 09</span>
+  <div class="skill-head"><h2>ui-ux-design-generator</h2><span class="cmd">/ui-ux-design-generator</span></div>
+  <p class="lede">A design-system skill: <em class="acc">UX wireframes</em> first (how it works), then a <em class="acc">UI design system spec</em> (how it looks).</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">A design ask — new system, new feature, or modification of an existing component.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0">UX: wireframe HTMLs + optional live demo + UX brief. UI: design-system spec (palette, type, motion, components) + optional icon set. All in <code>specs/ui-ux-design-&lt;name&gt;/</code>.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> when you need interaction patterns validated before development; when picking a visual style for a new surface.
+    <br><b style="color:var(--ink)">Notable:</b> two-phase (UX → UI), each phase asks how many options to generate, and a state file lets you resume across sessions.
+  </p>
+  <div class="footer"><span>Pipeline · step 3</span><span class="num"></span></div>
+</div></section>
+
+<!-- 10 ui-ux example · part 1 -->
+<section class="slide"><div class="pad">
+  <span class="tag">Sample output · ui-ux-design-generator</span>
+  <h2>Two phases, two different artifacts</h2>
+  <p class="lede" style="margin:0">
+    UX produces <em class="acc">interactive wireframes</em> (and an optional live demo) to validate the flow.
+    UI produces a <em class="acc">design-system spec</em> — palette, type, motion, components.
+  </p>
+  <div class="grid-2" style="margin-top:14px">
+    <div>
+      <div class="mock wire">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="body">
+          <div class="nav"><span></span><span></span><span></span><span></span></div>
+          <div class="main">
+            <div class="h1"></div>
+            <div class="h2"></div>
+            <div class="row">
+              <div class="card-mini"><div class="blk" style="height:6px;width:24px"></div><div class="h2"></div></div>
+              <div class="card-mini"><div class="blk" style="height:6px;width:24px"></div><div class="h2"></div></div>
+              <div class="card-mini"><div class="blk" style="height:6px;width:24px"></div><div class="h2"></div></div>
+            </div>
+            <div class="btn"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>Phase 1 · UX</b> &nbsp;·&nbsp; grayscale wireframes &nbsp;+&nbsp; optional live demo HTML</div>
+    </div>
+    <div>
+      <div class="tokens">
+        <div class="sec">
+          <span class="lbl">Color palette</span>
+          <div class="swatches">
+            <div class="sw" style="background:#0B1020"></div>
+            <div class="sw" style="background:#FF7A1A"></div>
+            <div class="sw" style="background:#3DDC97"></div>
+            <div class="sw" style="background:#FFD166"></div>
+            <div class="sw" style="background:#9AA3B2"></div>
+            <div class="sw" style="background:#F5F7FA"></div>
+          </div>
+        </div>
+        <div class="sec">
+          <span class="lbl">Typography</span>
+          <div class="typescale">
+            <span class="t1">Aa</span><span class="t2">Aa</span><span class="t3">Aa</span>
+            <span style="font-size:9.5px;color:var(--muted);letter-spacing:.04em">Inter · 14 / 18 / 32</span>
+          </div>
+        </div>
+        <div class="sec">
+          <span class="lbl">Motion</span>
+          <div class="motion">
+            <span class="chip">120ms ease-out</span>
+            <span class="chip">spring(0.4, 0.9)</span>
+            <span class="chip">reduced-motion: fade</span>
+          </div>
+        </div>
+        <div class="sec">
+          <span class="lbl">Components</span>
+          <div class="comps">
+            <span class="btn-p">Primary</span>
+            <span class="btn-s">Secondary</span>
+            <span class="badge">SUCCESS</span>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>Phase 2 · UI</b> &nbsp;·&nbsp; design system: palette, type, motion, components</div>
+    </div>
+  </div>
+  <div class="footer"><span>Sample · ui-ux-design-generator · 1 of 2</span><span class="num"></span></div>
+</div></section>
+
+<!-- 11 ui-ux example · part 2 -->
+<section class="slide"><div class="pad">
+  <span class="tag">Sample output · ui-ux-design-generator (cont.)</span>
+  <h2>Artifacts &amp; why two phases</h2>
+  <div class="grid-2" style="margin-top:8px">
+    <div class="panel">
+      <h3>What lands on disk</h3>
+<div class="tree"><span class="acc">specs/ui-ux-design-reports/</span>
+├── .design-state.json          <span class="dim"># resume state</span>
+├── ux-preview-option-a.html    <span class="dim"># wireframe, interactive</span>
+├── ux-preview-option-b.html    <span class="dim"># alternate wireframe</span>
+├── ux-live-demo.html           <span class="dim"># optional · full-flow simulation</span>
+├── ux-brief.md                 <span class="dim"># UX patterns &amp; decisions</span>
+├── ui-preview-option-a.html    <span class="dim"># design-system applied to UX</span>
+├── ui-preview-option-b.html
+├── ui-brief.md                 <span class="dim"># palette, type, motion, components</span>
+└── icon-set.md                 <span class="dim"># optional · custom SVG icons</span></div>
+    </div>
+    <div class="panel">
+      <h3>Why two phases</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.55">
+        <b style="color:var(--ink)">Phase 1 — UX</b> answers <em class="acc">"is this the right flow?"</em>
+        Wireframes are interactive and grayscale on purpose: you validate behavior, navigation, and states without arguing about color. The optional live demo simulates the full end-to-end experience.
+        <br><br>
+        <b style="color:var(--ink)">Phase 2 — UI</b> answers <em class="acc">"how does the system look?"</em>
+        The deliverable is a <em class="acc">design-system spec</em> — color tokens, type scale, motion, spacing, component styles. The HTML previews just visualize it; the brief is what frontend implements against.
+        <br><br>
+        State persists in <code>.design-state.json</code>, so any phase can be paused and resumed.
+      </p>
+    </div>
+  </div>
+  <div class="footer"><span>Sample · ui-ux-design-generator · 2 of 2</span><span class="num"></span></div>
+</div></section>
+
+<!-- 12 create-implementation-order -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 04 / 09</span>
+  <div class="skill-head"><h2>create-implementation-order</h2><span class="cmd">/create-implementation-order</span></div>
+  <p class="lede">Looks at all your specs and proposes a dependency-ordered implementation strategy — one plan or many.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">All spec files: use cases, design, flows, shared patterns.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0"><code>specs/implementation-order.md</code> — domain groupings with the right <code>/dev-plan</code> commands to invoke for each.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> after design is approved, before you start implementing — when you need to decide "is this one plan, or three?".
+    <br><b style="color:var(--ink)">Notable:</b> small scope → one plan; large scope → multiple domain plans grouped by shared infra. Never invokes <code>/dev-plan</code> itself — that's your call.
+  </p>
+  <div class="footer"><span>Pipeline · step 4</span><span class="num"></span></div>
+</div></section>
+
+<!-- 12b implementation-order example -->
+<section class="slide"><div class="pad">
+  <span class="tag">Sample output · create-implementation-order</span>
+  <h2>What you actually get</h2>
+  <div class="grid-2" style="margin-top:4px">
+    <div class="panel">
+      <h3>File shape · implementation-order.md</h3>
+<pre class="snip"><span class="h"># Implementation Order — IdentityHub</span>
+
+<span class="h">## Status</span>
+<span class="c">| Domain | Description       | Status      |</span>
+<span class="c">|--------|-------------------|-------------|</span>
+<span class="c">| 1      | Scaffolding       | implemented |</span>
+<span class="c">| 2      | Auth              | implemented |</span>
+<span class="c">| 3      | Jira Integration  | implemented |</span>
+<span class="c">| 4      | Tickets — Web     | implemented |</span>
+<span class="c">| 5      | API Keys &amp; Ext   | implemented |</span>
+
+<span class="h">## Domain N: &lt;name&gt;</span>
+<span class="s">Scope:</span> <span class="c">one-line boundary</span>
+<span class="s">Depends on:</span> <span class="c">Domain N-1</span>
+<span class="s">Covers:</span>
+<span class="c">- bullet list of what this domain owns</span>
+
+<span class="c">&nbsp;&nbsp;/dev-plan @spec1.md @spec2.md …</span>
+<span class="c">&nbsp;&nbsp;(ready-to-run command with right context)</span></pre>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">
+        One file. Status tracker at top. One section per domain with the exact <code>/dev-plan</code> invocation to run next.
+      </p>
+    </div>
+    <div class="panel">
+      <h3>Excerpt · Domain 2: Auth</h3>
+<pre class="snip"><span class="h">## Domain 2: Auth</span>
+
+<span class="s">Scope:</span> <span class="c">signup, login, logout, sessions, DB setup</span>
+<span class="s">Depends on:</span> <span class="c">Domain 1</span>
+
+<span class="s">Covers:</span>
+<span class="c">- TypeORM setup + users table migration</span>
+<span class="c">- Auth module: signup, login, logout endpoints</span>
+<span class="c">- Passport local + express-session + connect-redis</span>
+<span class="c">- Session guard (AuthGuard)</span>
+<span class="c">- GET /api/auth/me session check</span>
+<span class="c">- Angular login + signup pages</span>
+<span class="c">- Route guards, 401 interceptor → redirect</span>
+<span class="c">- Seed script (test user)</span>
+
+<span class="s">Next step</span>
+<span class="h">/dev-plan</span> @specs/tech-design-identity-hub/flows/
+          flow-signup.md
+          flow-login.md
+          flow-logout.md
+          shared-patterns.md
+          api-contract.md
+          ui-brief.md</pre>
+    </div>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:6px">
+    Big scope → multiple domains with <em class="acc">explicit dependencies</em>. Each one ends with the ready-to-paste <code>/dev-plan</code> command, context files included. Skill never runs <code>/dev-plan</code> itself — your call, your timing.
+  </p>
+  <div class="footer"><span>Sample · create-implementation-order</span><span class="num"></span></div>
+</div></section>
+
+<!-- 13 dev-plan -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 05 / 09</span>
+  <div class="skill-head"><h2>dev-plan</h2><span class="cmd">/dev-plan</span></div>
+  <p class="lede">Break a feature into <em class="acc">minimal, independently committable steps</em> — each leaving the system working and reviewable.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">A task description plus the codebase context.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0"><code>specs/plan-&lt;name&gt;/</code> with a README (status tracker) plus <code>step-01-*.md</code>, <code>step-02-*.md</code>, … each with goal, changes, acceptance criteria, code examples, tests.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> before writing code on anything non-trivial — or to resume an existing plan tomorrow.
+    <br><b style="color:var(--ink)">Notable:</b> the README is the state machine. Future sessions read it to know what's done. Each step ships as its own commit.
+  </p>
+  <div class="footer"><span>Pipeline · step 5 · the heart of it</span><span class="num"></span></div>
+</div></section>
+
+<!-- 13b dev-plan example -->
+<section class="slide"><div class="pad">
+  <span class="tag">Sample output · dev-plan</span>
+  <h2>What you actually get</h2>
+  <div class="grid-2" style="margin-top:4px">
+    <div class="panel">
+      <h3>Folder + README (status machine)</h3>
+<div class="tree"><span class="acc">specs/plan-auth/</span>
+├── README.md                              <span class="dim"># overview + status table</span>
+├── step-01-postgresql-users.md
+├── step-02-redis-auth-backend.md
+└── step-03-auth-frontend.md</div>
+<pre class="snip" style="margin-top:10px"><span class="h"># Implementation Plan: Auth</span>
+
+<span class="h">## Status</span>
+<span class="c">| Step | Description                 | Status |</span>
+<span class="c">|------|-----------------------------|--------|</span>
+<span class="c">| 01   | Postgres lib, users table   | done   |</span>
+<span class="c">| 02   | Redis, auth endpoints, sess | done   |</span>
+<span class="c">| 03   | Angular auth pages + guard  | done   |</span>
+
+<span class="h">## Current state</span>
+<span class="c">Free-text snapshot of what's shipped so far.</span>
+
+<span class="h">## Decisions &amp; notes</span>
+<span class="c">- signup auto-logs in (no login redirect)</span>
+<span class="c">- login redirects to /tickets</span>
+<span class="c">- PG lib at libs/shared/postgresql</span></pre>
+    </div>
+    <div class="panel">
+      <h3>Excerpt · step-01-postgresql-users.md</h3>
+<pre class="snip"><span class="h"># Step 01: PostgreSQL lib + users table</span>
+
+<span class="h">## Goal</span>
+<span class="c">Set up Postgres connection as shared lib. Create</span>
+<span class="c">users table via TypeORM migration.</span>
+
+<span class="h">## Why this step</span>
+<span class="c">Every backend feature needs DB access. Users table</span>
+<span class="c">is required for signup + login.</span>
+
+<span class="h">## Changes</span>
+<span class="s">Shared PostgreSQL lib</span>
+<span class="c">- Generate libs/shared/postgresql</span>
+<span class="c">- PostgresqlModule with forRoot(options)</span>
+<span class="c">- Path alias @identity-hub/postgresql</span>
+
+<span class="s">Users entity + migration</span>
+<span class="c">- id uuid, email unique, password_hash, timestamps</span>
+<span class="c">- migration script: CREATE TABLE users …</span>
+
+<span class="h">## Acceptance criteria</span>
+<span class="c">- migration runs clean on empty DB</span>
+<span class="c">- libs/shared/postgresql imports without circular dep</span>
+<span class="c">- nx build nhi-api passes</span>
+
+<span class="h">## Folder structure</span>
+<span class="c">libs/shared/postgresql/src/lib/…</span></pre>
+    </div>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:6px">
+    README = <em class="acc">state machine</em>. Each step file = Goal · Why · Changes · Acceptance · Folder structure · Notes. One step = one commit, system stays green between steps.
+  </p>
+  <div class="footer"><span>Sample · dev-plan</span><span class="num"></span></div>
+</div></section>
+
+<!-- 14 end-to-end -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 06 / 09 · the orchestrator</span>
+  <div class="skill-head"><h2>end-to-end</h2><span class="cmd">/end-to-end</span></div>
+  <p class="lede">Drives the whole pipeline for you — requirements → use-cases → tech-design → ui-ux → impl-order → dev-plans → execution.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">A new feature or system description + requirements.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0"><code>specs/e2e-&lt;name&gt;-&lt;date&gt;/</code> containing every downstream artifact: <code>use-cases/</code>, <code>tech-design/</code>, <code>design/</code>, <code>plan-*/</code>.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> kicking off a new feature from scratch and you want the guided experience.
+    <br><b style="color:var(--ink)">Notable:</b> maintains workflow state JSON. At every transition: continue / go-back / stop. Does <em class="acc">not</em> auto-commit — that's still your decision.
+  </p>
+  <div class="footer"><span>Pipeline · the meta-skill</span><span class="num"></span></div>
+</div></section>
+
+<!-- 15 pre-commit -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 07 / 09</span>
+  <div class="skill-head"><h2>pre-commit</h2><span class="cmd">/pre-commit</span></div>
+  <p class="lede">Run the right quality gates — tests then build — before you commit. Stack-aware.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">Just invoke it. Detects Node, Python, Go, Rust, etc. automatically.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0">Pass / fail / skip per gate, with the relevant ~30 lines of error output if something breaks.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> right before <code>/commit</code>, every time. Catches the silly stuff before review.
+    <br><b style="color:var(--ink)">Notable:</b> tests first (cheapest fix), build second. Stops on first failure. Never auto-commits — you decide after gates pass.
+  </p>
+  <div class="footer"><span>Pipeline · step 7</span><span class="num"></span></div>
+</div></section>
+
+<!-- 16 commit -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 08 / 09</span>
+  <div class="skill-head"><h2>commit</h2><span class="cmd">/commit</span></div>
+  <p class="lede">Read the diff, write a clean Conventional Commit, stage the right files, create the commit.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">Your current working tree (staged + unstaged changes).</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0"><code>&lt;type&gt;[scope]: &lt;description&gt;</code> commit with optional body and a Co-Authored-By footer.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> after <code>/pre-commit</code> passes and you're ready to land a step.
+    <br><b style="color:var(--ink)">Notable:</b> stages files <em class="acc">by name</em> (never <code>git add -A</code>), refuses to stage anything that smells like a secret, never amends — always creates a new commit.
+  </p>
+  <div class="footer"><span>Pipeline · step 8</span><span class="num"></span></div>
+</div></section>
+
+<!-- 17 document -->
+<section class="slide"><div class="pad">
+  <span class="tag">Skill 09 / 09</span>
+  <div class="skill-head"><h2>document</h2><span class="cmd">/document</span></div>
+  <p class="lede">Create or update docs to reflect what the code actually does. Code is the source of truth.</p>
+  <div class="io">
+    <div class="box"><h3>In</h3><p style="font-size:13.5px;margin:0">A topic ("authentication", "ingestion pipeline") — and optionally an existing doc to align.</p></div>
+    <div class="box"><h3>Out</h3><p style="font-size:13.5px;margin:0">A markdown doc in <code>docs/</code>, registered in <code>CLAUDE.md</code> with trigger hints so future agents find it.</p></div>
+  </div>
+  <p class="muted" style="font-size:13.5px;margin-top:6px">
+    <b style="color:var(--ink)">When to invoke:</b> after a feature lands; whenever docs and code have drifted.
+    <br><b style="color:var(--ink)">Notable:</b> two modes — update an existing doc, or create new (asks doc type and audience first). If code and docs disagree, code wins.
+  </p>
+  <div class="footer"><span>Pipeline · step 9</span><span class="num"></span></div>
+</div></section>
+
+<!-- 18 Worked example -->
+<section class="slide" id="topic-example"><div class="pad">
+  <span class="tag">End-to-end example</span>
+  <h2>"Add a CSV export to the reports page"</h2>
+  <table style="margin-top:4px">
+    <thead><tr><th style="width:18%">Step</th><th style="width:30%">You say</th><th>What lands in the repo</th></tr></thead>
+    <tbody>
+      <tr><td><code>/use-cases-generator</code></td><td>"PMs need to export filtered reports as CSV."</td><td><code>specs/use-cases-export/</code> with surfaces, flows, edge cases</td></tr>
+      <tr><td><code>/tech-design-generator</code></td><td>"Use the existing reports query layer."</td><td><code>specs/tech-design-export/</code>: streaming endpoint, format module, contract</td></tr>
+      <tr><td><code>/ui-ux-design-generator</code></td><td>"A button + modal in the reports header."</td><td><code>specs/ui-ux-design-export/</code>: wireframes + UI design-system spec</td></tr>
+      <tr><td><code>/dev-plan</code></td><td>"Implement it."</td><td><code>specs/plan-export/</code>: 4 steps — endpoint, formatter, UI, telemetry</td></tr>
+      <tr><td><code>/pre-commit</code> + <code>/commit</code></td><td>(after each step)</td><td>4 small commits, each green, each reviewable</td></tr>
+      <tr><td><code>/document</code></td><td>"Document the export feature."</td><td><code>docs/exports.md</code>, registered in CLAUDE.md</td></tr>
+    </tbody>
+  </table>
+  <div class="footer"><span>One feature · six skills · zero context loss</span><span class="num"></span></div>
+</div></section>
+
+<!-- 19 Resources / Q&A -->
+<section class="slide" id="topic-qa"><div class="pad">
+  <span class="tag">Q&amp;A</span>
+  <h2>Resources &amp; Q&amp;A</h2>
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase">Try it now</h3>
+<pre>/plugin marketplace add https://github.com/dorg-atsabari/forge
+/plugin install spec-driven-dev@forge
+/end-to-end</pre>
+      <p class="muted" style="font-size:13px;margin-top:14px">
+        Pick a small feature you'd otherwise just start coding. Run <code>/end-to-end</code> on it. Compare the experience.
+      </p>
+    </div>
+    <div>
+      <h3 style="color:var(--accent);font-size:11px;letter-spacing:.16em;text-transform:uppercase">Takeaways</h3>
+      <ul class="clean">
+        <li><div>forge packages spec-driven dev into slash commands.</div></li>
+        <li><div>Use the whole pipeline, or just one skill — it's a menu.</div></li>
+        <li><div>Every artifact is plain markdown. Diffable, reviewable, resumable.</div></li>
+        <li><div>Write your own plugins. The marketplace is open.</div></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer"><span>Questions?  ·  alon.t · AI mentor</span><span class="num"></span></div>
+</div></section>
+
+</div>
+<script>
+let cur = 0;
+const counter = document.querySelector('.present-counter');
+
+function slides() { return document.querySelectorAll('.slide'); }
+
+function showSlide(i, direction) {
+  const s = slides();
+  const next = Math.max(0, Math.min(i, s.length - 1));
+  s.forEach(el => el.classList.remove('active','prev','next','enter-from-right','enter-from-left'));
+  cur = next;
+  s[cur].classList.add('active');
+  if (direction === 'right') s[cur].classList.add('enter-from-right');
+  else if (direction === 'left') s[cur].classList.add('enter-from-left');
+  if (cur > 0) s[cur - 1].classList.add('prev');
+  if (cur < s.length - 1) s[cur + 1].classList.add('next');
+  counter.textContent = (cur + 1) + ' / ' + s.length;
+}
+
+function startPresent() {
+  document.body.classList.add('presenting');
+  showSlide(0);
+}
+
+function stopPresent() {
+  document.body.classList.remove('presenting');
+  slides().forEach(el => el.classList.remove('active','prev','next','enter-from-right','enter-from-left'));
+}
+
+document.addEventListener('click', function(e) {
+  if (!document.body.classList.contains('presenting')) return;
+
+  var link = e.target.closest('a.topic');
+  if (link) {
+    e.preventDefault();
+    var target = document.querySelector(link.getAttribute('href'));
+    if (!target) return;
+    var s = slides();
+    for (var i = 0; i < s.length; i++) {
+      if (s[i] === target) { showSlide(i, i > cur ? 'right' : 'left'); break; }
+    }
+    return;
+  }
+
+  var prevSlide = e.target.closest('.slide.prev');
+  if (prevSlide) { showSlide(cur - 1, 'left'); return; }
+  var nextSlide = e.target.closest('.slide.next');
+  if (nextSlide) { showSlide(cur + 1, 'right'); return; }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (document.body.classList.contains('presenting')) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(cur + 1, 'right'); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(cur - 1, 'left'); }
+    else if (e.key === 'Escape') { e.preventDefault(); stopPresent(); }
+  }
+});
+
+</script>
+</body>
+</html>
