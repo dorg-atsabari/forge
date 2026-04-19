@@ -1,7 +1,7 @@
 ---
 name: pre-commit
 description: Run pre-commit quality gates (unit tests, build) before committing code. Use this skill whenever the user says /pre-commit, "check before commit", "run pre-commit checks", "ready to commit", or wants to validate their changes are PR-ready. Also trigger when the user asks to commit and there's no evidence checks have been run yet.
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Pre-Commit Quality Gates

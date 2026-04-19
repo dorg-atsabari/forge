@@ -1,7 +1,7 @@
 ---
 name: commit
 description: "Analyze all changes in the working tree and create a well-structured conventional commit. Use when the user wants to commit their changes, stage and commit, or asks to create a git commit."
-disable-model-invocation: false
+disable-model-invocation: true
 allowed-tools: Bash(git *)
 ---
 

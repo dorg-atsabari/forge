@@ -1,6 +1,7 @@
 ---
 name: dev-plan
 description: Create, continue, or execute a structured implementation plan. Breaks work into minimal, independently committable steps — each with its own doc — and tracks progress via a README.md. Use this skill when the user says /dev-plan, "create a plan", "continue the plan", "what's the plan status", "implement step X", or wants a structured approach before coding. Also trigger when the user references a plan folder by path (e.g., "continue with the plan under specs/plan-x/", "pick up from specs/plan-roadmap/"), wants to resume work, check progress, or execute the next step of an existing plan.
+disable-model-invocation: true
 ---
 
 # Execution Plan
