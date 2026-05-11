@@ -64,7 +64,19 @@ Before planning, understand what exists:
 - Identify which modules/files will be touched
 - Check for existing tests, CI config, build setup
 
-### 3. Design the Steps
+### 3. Map the File Structure
+
+Before defining steps, produce an explicit file map: every file that will be created or modified, with a one-line description of its responsibility. Use `+` for new, `(update)` for modified.
+
+```
++ src/auth/token_validator.py        — validates and decodes JWT tokens
+(update) src/auth/middleware.py      — wire in token_validator
++ tests/auth/test_token_validator.py
+```
+
+This locks in decomposition decisions before step writing begins. Each step should trace back to one or more entries in this map. Design files with clear, single responsibilities — prefer smaller focused files over large ones that do too much.
+
+### 4. Design the Steps
 
 Break the implementation into the minimum number of ordered steps where:
 
@@ -75,7 +87,7 @@ Break the implementation into the minimum number of ordered steps where:
 
 For each step, think: "If I stopped here and committed, would CI pass? Would the app work?" If not, merge it with the next step or restructure.
 
-### 4. Create the Plan Folder
+### 5. Create the Plan Folder
 
 If an output path was provided as context (e.g., by a workflow orchestrator), write to that path instead of the default below.
 
@@ -128,11 +140,31 @@ If the plan needs to change (new requirements, different approach, step was too 
 - Add new steps, renumber if needed
 - Always keep README.md as the source of truth
 
+## No Placeholders
+
+Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:
+- "TBD", "TODO", "implement later", "fill in details"
+- "Add appropriate error handling" / "add validation" / "handle edge cases"
+- "Write tests for the above" (without actual test code)
+- "Similar to Step N" (repeat the code — the engineer may be reading steps out of order)
+- Steps that describe what to do without showing how (code blocks required for code steps)
+- References to types, functions, or methods not defined in any step
+
+## Self-Review
+
+After writing the complete plan, look at the spec with fresh eyes. This is a checklist you run yourself — not a subagent dispatch.
+
+1. **Spec coverage**: skim each requirement. Can you point to a step that implements it? List any gaps.
+2. **Placeholder scan**: search for any of the patterns from "No Placeholders" above. Fix them.
+3. **Type consistency**: do the types, method signatures, and property names used in later steps match what was defined in earlier steps? A function called `clearLayers()` in Step 3 but `clearFullLayers()` in Step 6 is a bug.
+
+Fix issues inline. No need to re-review — just fix and move on. If a requirement has no step, add the step.
+
 ## Guidelines
 
 - When a step introduces new directories or enough new files that spatial context helps, include a **Folder Structure** section showing the tree with `+` for new and `(update)` for modified items. If Changes already lists 2-3 files and no new directories, skip this section — it would just duplicate Changes.
 - Keep step descriptions concrete — name specific files, functions, endpoints. Vague steps like "implement the feature" are useless.
-- **Include short code examples** in each step's Changes section. Show the key code for each new file or significant change — enough to convey the shape, imports, and patterns. This helps reviewers understand the approach at a glance and gives the execution phase concrete context to work from. Match existing codebase conventions in the examples (e.g., DI style, decorator usage, naming).
+- **Include complete code** in each step's Changes section. Show the full content of every new file and every modified block — enough that an executor can apply the change without guessing. Match existing codebase conventions (e.g., DI style, decorator usage, naming).
 - **Include a Tests section** in each step doc. List the test file(s) to create and show concrete test cases with setup (mocks, test module) and assertions. If a step genuinely has nothing to test (e.g., a migration-only step), state that explicitly and explain why.
 - If a step requires a migration or schema change, it should be its own step (or the first part of a step) since those are hard to undo.
 - If you realize during execution that a step needs to be split, update the plan — add the new steps, renumber if needed, update README.md.
