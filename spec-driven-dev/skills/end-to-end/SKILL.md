@@ -1,6 +1,5 @@
 ---
 name: end-to-end
-disable-model-invocation: true
 description: "Orchestrate a full development cycle — from technical design through UI/UX design, implementation planning, and execution. Supports both new systems and features on existing systems. Only invoke via /end-to-end."
 ---
 

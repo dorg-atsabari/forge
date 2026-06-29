@@ -1,7 +1,6 @@
 ---
 name: tech-design-generator
 description: "Generate technical architecture designs for systems and applications. Produces component designs, communication patterns, database choices, API contracts, shared patterns, and detailed flow designs — all as structured markdown docs. Use this skill when the user says /tech-design-generator, 'design the architecture', 'technical design', 'system design', 'how should we architect this', or wants to define the technical structure before implementation. Also trigger when the user shares requirements or a spec and wants to plan the technical approach."
-disable-model-invocation: true
 ---
 
 # Technical Design Generator

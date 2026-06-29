@@ -1,7 +1,6 @@
 ---
 name: create-implementation-order
 description: "Analyze all available specs and propose an implementation order — either as a single dev-plan (small scope) or grouped into dependency-ordered domains (larger scope). Invoke via /create-implementation-order. Waits for approval before writing specs/implementation-order.md."
-disable-model-invocation: true
 ---
 
 # Create Implementation Order

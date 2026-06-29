@@ -1,7 +1,6 @@
 ---
 name: use-cases-generator
 description: "Extract structured use cases from raw requirements. Takes requirements input (file, conversation, or description) and produces organized use case files grouped by high-level product surfaces. Use when the user says /use-cases-generator, 'extract use cases', 'break down requirements', 'what are the use cases', or wants to turn raw requirements into structured context before design or planning."
-disable-model-invocation: true
 ---
 
 # Use Cases Generator
