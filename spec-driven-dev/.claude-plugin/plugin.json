@@ -1,7 +1,7 @@
 {
   "name": "spec-driven-dev",
   "description": "A full product-dev pipeline for Claude Code: use cases, tech design, UX/UI design, dev plans, pre-commit checks, and commit workflows.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": {
     "name": "dorg-atsabari"
   },
