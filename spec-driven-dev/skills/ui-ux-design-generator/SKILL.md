@@ -1,5 +1,4 @@
 ---
-disable-model-invocation: true
 name: ui-ux-design-generator
 description: "Design system skill that produces UX wireframes and UI visual designs through a structured two-phase workflow. Phase 1 (UX): researches interaction patterns, generates grayscale wireframe HTML previews for user flow validation, then produces a UX brief. Phase 2 (UI): researches visual styles, generates styled HTML previews with design tokens, then produces a UI brief. Each phase asks how many options to generate, supports review and iteration, and maintains state so work can resume across sessions. Trigger when: the user asks to design something, create a design system, generate wireframes, preview a design, define how something should look or behave, or says things like 'design the dashboard', 'how should this flow work', 'make it look like X', 'generate a UX wireframe', 'create a design preview'. Also triggers on 'continue the design' to resume from saved state."
 ---

@@ -1,7 +1,6 @@
 ---
 name: document
 description: "Create or align documentation with the current codebase. Takes a topic, finds matching docs, and updates them to reflect the actual code — or creates new docs if none exist. Use this skill when the user says /document, 'document the auth system', 'docs are stale', 'update docs to match the code', 'document how X works', or wants to ensure documentation reflects the current state of the codebase."
-disable-model-invocation: true
 ---
 
 # Align Docs
